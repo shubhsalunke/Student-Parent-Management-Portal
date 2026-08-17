@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, GraduationCap, HeartHandshake, CheckCircle2, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { GraduationCap, HeartHandshake, CheckCircle2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { addStudentAndParent, generateNextStudentId, generateNextParentId } from '../../data/demoData';
 
 export default function AddStudent() {
@@ -15,6 +15,7 @@ export default function AddStudent() {
   const [studentId, setStudentId] = useState(defaultStudentId);
   const [className, setClassName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
+  const [bloodGroup, setBloodGroup] = useState('O+');
   const [studentEmail, setStudentEmail] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
   const [studentPassword, setStudentPassword] = useState('student123');
@@ -40,6 +41,7 @@ export default function AddStudent() {
       name: studentName.trim(),
       className: className.trim(),
       rollNumber: rollNumber.trim(),
+      bloodGroup: bloodGroup,
       email: studentEmail.trim(),
       phone: studentPhone.trim(),
       password: studentPassword.trim()
@@ -148,6 +150,24 @@ export default function AddStudent() {
                 placeholder="12"
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Blood Group *</label>
+              <select
+                value={bloodGroup}
+                onChange={(e) => setBloodGroup(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white font-medium text-slate-800"
+              >
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+              </select>
             </div>
 
             <div>

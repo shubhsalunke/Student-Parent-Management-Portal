@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Award, BookOpen, CheckCircle } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { getCurrentUser, getResultRecords, calculateResultStats } from '../../data/demoData';
 
 export default function Results() {
@@ -12,7 +12,7 @@ export default function Results() {
     const data = getResultRecords(authUser.id);
     setResults(data);
     setStats(calculateResultStats(data));
-  }, [authUser?.id]);
+  }, [authUser]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

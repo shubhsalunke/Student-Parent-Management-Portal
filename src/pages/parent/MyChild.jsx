@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, Mail, Phone, Hash, Shield } from 'lucide-react';
+import { GraduationCap, Mail, Phone, Hash, Shield, Heart } from 'lucide-react';
 import { getCurrentUser, getStudentForParent } from '../../data/demoData';
 
 export default function MyChild() {
@@ -10,7 +10,7 @@ export default function MyChild() {
     if (!authUser) return;
     const child = getStudentForParent(authUser.id);
     setStudent(child);
-  }, [authUser?.id]);
+  }, [authUser]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -71,6 +71,14 @@ export default function MyChild() {
                   <span>Roll Number</span>
                 </div>
                 <p className="font-semibold text-slate-800 font-mono">{student.rollNumber}</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                  <Heart className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Blood Group</span>
+                </div>
+                <p className="font-bold text-rose-700 text-base">{student.bloodGroup || 'O+'}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">

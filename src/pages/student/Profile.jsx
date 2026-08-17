@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, GraduationCap, Hash, Shield } from 'lucide-react';
+import { User, Mail, Phone, GraduationCap, Hash, Heart } from 'lucide-react';
 import { getCurrentUser, getStudents } from '../../data/demoData';
 
 export default function Profile() {
@@ -11,7 +11,7 @@ export default function Profile() {
     const students = getStudents();
     const found = students.find((s) => s.id === authUser.id);
     setStudent(found || authUser);
-  }, [authUser?.id]);
+  }, [authUser]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -55,6 +55,14 @@ export default function Profile() {
                 <span>Roll Number</span>
               </div>
               <p className="font-bold text-slate-800 text-base font-mono">{student?.rollNumber || 'N/A'}</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                <Heart className="w-3.5 h-3.5 text-rose-500" />
+                <span>Blood Group</span>
+              </div>
+              <p className="font-bold text-rose-700 text-base">{student?.bloodGroup || 'O+'}</p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">

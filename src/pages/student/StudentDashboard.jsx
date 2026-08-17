@@ -31,7 +31,7 @@ export default function StudentDashboard() {
     setResultStats(calculateResultStats(resRecords));
 
     setParentInfo(getParentForStudent(authUser.id));
-  }, [authUser?.id]);
+  }, [authUser]);
 
   return (
     <div className="space-y-6">

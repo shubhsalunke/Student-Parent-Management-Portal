@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Mail, Phone, HeartHandshake, GraduationCap } from 'lucide-react';
+import { UserCheck, Mail, Phone, GraduationCap } from 'lucide-react';
 import { getCurrentUser, getParents, getStudentForParent } from '../../data/demoData';
 
 export default function ParentProfile() {
@@ -13,7 +13,7 @@ export default function ParentProfile() {
     const found = parents.find((p) => p.id === authUser.id);
     setParent(found || authUser);
     setChild(getStudentForParent(authUser.id));
-  }, [authUser?.id]);
+  }, [authUser]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

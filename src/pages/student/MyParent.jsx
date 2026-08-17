@@ -10,7 +10,7 @@ export default function MyParent() {
     if (!authUser) return;
     const parentData = getParentForStudent(authUser.id);
     setParent(parentData);
-  }, [authUser?.id]);
+  }, [authUser]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

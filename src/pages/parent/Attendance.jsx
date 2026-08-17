@@ -18,7 +18,7 @@ export default function ParentAttendance() {
       setRecords(data);
       setPercentage(calculateAttendancePercentage(data));
     }
-  }, [authUser?.id]);
+  }, [authUser]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

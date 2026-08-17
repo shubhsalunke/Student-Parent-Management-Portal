@@ -14,6 +14,7 @@ export const DEFAULT_STUDENTS = [
     name: "Rahul Sharma",
     className: "8-A",
     rollNumber: "12",
+    bloodGroup: "O+",
     email: "rahul@example.com",
     phone: "9876543210",
     password: "student123",
@@ -24,6 +25,7 @@ export const DEFAULT_STUDENTS = [
     name: "Riya Patil",
     className: "7-B",
     rollNumber: "09",
+    bloodGroup: "A+",
     email: "riya@example.com",
     phone: "9876543215",
     password: "student123",
@@ -128,6 +130,7 @@ export const getStudents = () => {
   const list = JSON.parse(localStorage.getItem("portal_students") || "[]");
   return list.map((s) => ({
     ...s,
+    bloodGroup: s.bloodGroup || "O+",
     password: s.password || "student123"
   }));
 };

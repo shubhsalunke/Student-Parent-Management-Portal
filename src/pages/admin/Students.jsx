@@ -98,6 +98,7 @@ export default function Students() {
                 <th className="py-3.5 px-4">Name</th>
                 <th className="py-3.5 px-4">Class</th>
                 <th className="py-3.5 px-4">Roll No</th>
+                <th className="py-3.5 px-4">Blood Group</th>
                 <th className="py-3.5 px-4">Parent Name</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
@@ -105,7 +106,7 @@ export default function Students() {
             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-slate-400 text-sm">
+                  <td colSpan="7" className="py-8 text-center text-slate-400 text-sm">
                     No students found.
                   </td>
                 </tr>
@@ -122,6 +123,11 @@ export default function Students() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 font-mono">{student.rollNumber}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                          {student.bloodGroup || 'O+'}
+                        </span>
+                      </td>
                       <td className="py-3.5 px-4 font-medium text-slate-800">
                         {parentInfo ? (
                           <div className="flex items-center gap-1.5">
@@ -203,6 +209,12 @@ export default function Students() {
                 <div>
                   <p className="text-xs text-slate-400">Roll Number</p>
                   <p className="font-semibold text-slate-700">{viewingStudent.rollNumber}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Blood Group</p>
+                  <span className="inline-block mt-0.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                    {viewingStudent.bloodGroup || 'O+'}
+                  </span>
                 </div>
                 <div>
                   <p className="text-xs text-slate-400">Email</p>
@@ -384,6 +396,24 @@ export default function Students() {
                   onChange={(e) => setEditingStudent({ ...editingStudent, rollNumber: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Blood Group</label>
+                <select
+                  value={editingStudent.bloodGroup || 'O+'}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, bloodGroup: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800"
+                >
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                </select>
               </div>
 
               <div>
