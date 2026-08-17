@@ -15,6 +15,7 @@ export const DEFAULT_STUDENTS = [
     className: "8-A",
     rollNumber: "12",
     bloodGroup: "O+",
+    dob: "2010-05-15",
     email: "rahul@example.com",
     phone: "9876543210",
     password: "student123",
@@ -26,6 +27,7 @@ export const DEFAULT_STUDENTS = [
     className: "7-B",
     rollNumber: "09",
     bloodGroup: "A+",
+    dob: "2011-08-22",
     email: "riya@example.com",
     phone: "9876543215",
     password: "student123",
@@ -131,6 +133,7 @@ export const getStudents = () => {
   return list.map((s) => ({
     ...s,
     bloodGroup: s.bloodGroup || "O+",
+    dob: s.dob || "2010-01-01",
     password: s.password || "student123"
   }));
 };

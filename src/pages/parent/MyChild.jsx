@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, Mail, Phone, Hash, Shield, Heart } from 'lucide-react';
+import { GraduationCap, Mail, Phone, Hash, Shield, Heart, Calendar } from 'lucide-react';
 import { getCurrentUser, getStudentForParent } from '../../data/demoData';
 
 export default function MyChild() {
@@ -79,6 +79,14 @@ export default function MyChild() {
                   <span>Blood Group</span>
                 </div>
                 <p className="font-bold text-rose-700 text-base">{student.bloodGroup || 'O+'}</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Date of Birth</span>
+                </div>
+                <p className="font-semibold text-slate-800">{student.dob || '2010-01-01'}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">

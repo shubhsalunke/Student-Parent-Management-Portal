@@ -29,6 +29,22 @@ export default function Students() {
   const handleSaveEdit = (e) => {
     e.preventDefault();
     if (!editingStudent) return;
+
+    if (
+      !editingStudent.name?.trim() ||
+      !editingStudent.className?.trim() ||
+      !editingStudent.rollNumber?.trim() ||
+      !editingStudent.bloodGroup?.trim() ||
+      !editingStudent.dob?.trim() ||
+      !editingStudent.email?.trim() ||
+      !editingStudent.phone?.trim() ||
+      !editingStudent.password?.trim()
+    ) {
+      setToastMessage('Error: All input fields are mandatory! Please fill out every box before saving.');
+      setTimeout(() => setToastMessage(''), 4000);
+      return;
+    }
+
     updateStudent(editingStudent);
     setToastMessage(`Updated ${editingStudent.name}'s information successfully.`);
     setEditingStudent(null);
@@ -215,6 +231,10 @@ export default function Students() {
                   <span className="inline-block mt-0.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
                     {viewingStudent.bloodGroup || 'O+'}
                   </span>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Date of Birth</p>
+                  <p className="font-semibold text-slate-700">{viewingStudent.dob || '2010-01-01'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-400">Email</p>
@@ -414,6 +434,17 @@ export default function Students() {
                   <option value="AB+">AB+</option>
                   <option value="AB-">AB-</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Date of Birth</label>
+                <input
+                  type="date"
+                  required
+                  value={editingStudent.dob || '2010-01-01'}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, dob: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800"
+                />
               </div>
 
               <div>
