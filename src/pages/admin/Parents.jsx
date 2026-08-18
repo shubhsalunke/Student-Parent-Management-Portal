@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, UserCheck, Phone, Mail, Trash2, CheckCircle } from 'lucide-react';
-import { getParents, getStudentForParent, deleteParent } from '../../data/demoData';
+import { getParents, getStudentForParent, deleteParent, syncAllDataFromApi } from '../../data/demoData';
 
 export default function Parents() {
   const [parents, setParents] = useState([]);
@@ -13,7 +13,9 @@ export default function Parents() {
   };
 
   useEffect(() => {
-    loadData();
+    syncAllDataFromApi().then(() => {
+      loadData();
+    });
   }, []);
 
   const handleDeleteConfirm = () => {

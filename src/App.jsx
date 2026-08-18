@@ -49,6 +49,8 @@ export default function App() {
         <Route element={<ProtectedRoute allowedRoles={['admin']} pageTitle="Admin Portal" />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/add-student" element={<AddStudent />} />
+          <Route path="/admin/add%20student" element={<Navigate to="/admin/add-student" replace />} />
+          <Route path="/admin/addstudent" element={<Navigate to="/admin/add-student" replace />} />
           <Route path="/admin/students" element={<Students />} />
           <Route path="/admin/parents" element={<Parents />} />
         </Route>

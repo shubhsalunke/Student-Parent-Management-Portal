@@ -12,7 +12,7 @@ export default function Results() {
     const data = getResultRecords(authUser.id);
     setResults(data);
     setStats(calculateResultStats(data));
-  }, [authUser]);
+  }, [authUser?.id]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

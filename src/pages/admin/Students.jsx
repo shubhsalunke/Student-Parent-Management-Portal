@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff, Edit2, Trash2, UserPlus, X, Save, Search, CheckCircle, Copy, Check } from 'lucide-react';
-import { getStudents, getParentsForStudent, updateStudent, deleteStudent } from '../../data/demoData';
+import { Eye, EyeOff, Edit2, Trash2, UserPlus, X, Save, Search, CheckCircle, Copy, Check, RefreshCw } from 'lucide-react';
+import { getStudents, getParentsForStudent, updateStudent, deleteStudent, syncAllDataFromApi } from '../../data/demoData';
 
 export default function Students() {
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState('');
+  const [isSyncingApi, setIsSyncingApi] = useState(false);
   
   // Modals state
   const [viewingStudent, setViewingStudent] = useState(null);
@@ -23,8 +24,23 @@ export default function Students() {
   };
 
   useEffect(() => {
-    loadData();
+    syncAllDataFromApi().then(() => {
+      loadData();
+    });
   }, []);
+
+  const handleSyncApi = async () => {
+    setIsSyncingApi(true);
+    const res = await syncAllDataFromApi();
+    setIsSyncingApi(false);
+    if (res.success) {
+      setToastMessage(`Synced ${res.count} student(s) from live API (Get_Std_list) successfully!`);
+      loadData();
+    } else {
+      setToastMessage('Failed to sync data from live API.');
+    }
+    setTimeout(() => setToastMessage(''), 4000);
+  };
 
   const handleSaveEdit = (e) => {
     e.preventDefault();
@@ -76,13 +92,25 @@ export default function Students() {
           <h1 className="text-xl font-bold text-slate-800">All Registered Students</h1>
           <p className="text-xs text-slate-500 mt-0.5">Manage student accounts, view profiles, and update information.</p>
         </div>
-        <Link
-          to="/admin/add-student"
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md shadow-indigo-600/30 flex items-center gap-2 transition-all"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>Add Student</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={isSyncingApi}
+            onClick={handleSyncApi}
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition-all border border-slate-200/80 disabled:opacity-50"
+            title="Sync all students from live API Get_Std_list"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isSyncingApi ? 'animate-spin' : ''}`} />
+            <span>{isSyncingApi ? 'Syncing API...' : 'Sync Live API'}</span>
+          </button>
+          <Link
+            to="/admin/add-student"
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md shadow-indigo-600/30 flex items-center gap-2 transition-all"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Add Student</span>
+          </Link>
+        </div>
       </div>
 
       {toastMessage && (

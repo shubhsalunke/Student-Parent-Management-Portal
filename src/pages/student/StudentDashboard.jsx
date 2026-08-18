@@ -19,19 +19,20 @@ export default function StudentDashboard() {
   const [parentInfo, setParentInfo] = useState(null);
 
   useEffect(() => {
-    if (!authUser) return;
+    const user = getCurrentUser();
+    if (!user) return;
     const students = getStudents();
-    const curr = students.find((s) => s.id === authUser.id);
-    setStudentDetails(curr || authUser);
+    const curr = students.find((s) => s.id === user.id || (s.stdSrno && s.stdSrno === user.stdSrno));
+    setStudentDetails(curr || user);
 
-    const attRecords = getAttendanceRecords(authUser.id);
+    const attRecords = getAttendanceRecords(user.id);
     setAttendancePct(calculateAttendancePercentage(attRecords));
 
-    const resRecords = getResultRecords(authUser.id);
+    const resRecords = getResultRecords(user.id);
     setResultStats(calculateResultStats(resRecords));
 
-    setParentInfo(getParentForStudent(authUser.id));
-  }, [authUser]);
+    setParentInfo(getParentForStudent(user.id));
+  }, []);
 
   return (
     <div className="space-y-6">

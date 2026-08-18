@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap,
@@ -16,7 +16,10 @@ import {
   X,
   MapPin,
   Calendar,
-  User
+  User,
+  Globe,
+  Download,
+  Loader2
 } from 'lucide-react';
 import {
   addStudentWithMultipleGuardians,
@@ -24,6 +27,7 @@ import {
   generateNextParentId,
   formatPayloadJSON
 } from '../../data/demoData';
+import { fetchStudentDetailsFromApi, fetchMasterDataFromApi, saveStudentDetailsToApi } from '../../data/apiService';
 
 export default function AddStudent() {
   const navigate = useNavigate();
@@ -32,6 +36,17 @@ export default function AddStudent() {
   const defaultStudentId = generateNextStudentId();
   const defaultParentId = generateNextParentId();
 
+  // API Fetch State
+  const [apiSrnoInput, setApiSrnoInput] = useState('1');
+  const [isFetchingApi, setIsFetchingApi] = useState(false);
+
+  // Master Data State from Get_Std_Ms API
+  const [masterGenders, setMasterGenders] = useState([]);
+  const [masterBloodGroups, setMasterBloodGroups] = useState([]);
+  const [masterStates, setMasterStates] = useState([]);
+  const [masterDistricts, setMasterDistricts] = useState([]);
+  const [masterCities, setMasterCities] = useState([]);
+
   // Student Form State
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
@@ -39,7 +54,7 @@ export default function AddStudent() {
   const [studentId, setStudentId] = useState(defaultStudentId);
   const [className, setClassName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
-  const [bloodGroup, setBloodGroup] = useState('O+');
+  const [bloodGroup, setBloodGroup] = useState('B+');
   const [dob, setDob] = useState('2001-03-18');
   const [birthPlace, setBirthPlace] = useState('Aurangabad');
   const [gender, setGender] = useState('Male');
@@ -49,20 +64,87 @@ export default function AddStudent() {
   const [studentEmail, setStudentEmail] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
   const [address, setAddress] = useState('Chawni Pentionpura');
-  const [city, setCity] = useState('Aurangabad');
-  const [district, setDistrict] = useState('Aurangabad');
+  const [stateSrno, setStateSrno] = useState(1);
+  const [districtSrno, setDistrictSrno] = useState(1);
+  const [citySrno, setCitySrno] = useState(1);
+  const [city, setCity] = useState('Mumbai');
+  const [district, setDistrict] = useState('Mumbai');
   const [state, setState] = useState('Maharashtra');
   const [pincode, setPincode] = useState('431001');
   const [studentPassword, setStudentPassword] = useState('student123');
   const [showStudentPassword, setShowStudentPassword] = useState(false);
 
-  // Multi-Guardian Array State (Initially empty until user clicks Add Parent)
+  // Multi-Guardian Array State (Initially empty until user clicks Add Parent or Fetches API)
   const [guardians, setGuardians] = useState([]);
 
   const [emptyFields, setEmptyFields] = useState({});
   const [message, setMessage] = useState(null);
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [jsonCopied, setJsonCopied] = useState(false);
+
+  // Load Master Data on Mount
+  useEffect(() => {
+    const loadMasterData = async () => {
+      const res = await fetchMasterDataFromApi();
+      if (res.success) {
+        if (res.genders?.length) setMasterGenders(res.genders);
+        if (res.bloodGroups?.length) setMasterBloodGroups(res.bloodGroups);
+        if (res.states?.length) setMasterStates(res.states);
+        if (res.districts?.length) setMasterDistricts(res.districts);
+        if (res.cities?.length) setMasterCities(res.cities);
+      }
+    };
+    loadMasterData();
+  }, []);
+
+  // Fetch student details from live API endpoint
+  const handleFetchFromApi = async () => {
+    if (!apiSrnoInput.trim()) return;
+    setIsFetchingApi(true);
+    setMessage(null);
+
+    const result = await fetchStudentDetailsFromApi(apiSrnoInput.trim());
+    setIsFetchingApi(false);
+
+    if (result.success && result.student) {
+      const s = result.student;
+      setFirstName(s.firstName);
+      setMiddleName(s.middleName);
+      setLastName(s.lastName);
+      setStudentId(s.id);
+      setClassName(s.className);
+      setRollNumber(s.rollNumber);
+      setBloodGroup(s.bloodGroup);
+      setDob(s.dob);
+      setBirthPlace(s.birthPlace);
+      setGender(s.gender);
+      setAdmissionDate(s.admissionDate);
+      setStudentPhone(s.phone);
+      setStudentEmail(s.email);
+      setAddress(s.address);
+      setStateSrno(s.stateSrno || 1);
+      setDistrictSrno(s.districtSrno || 1);
+      setCitySrno(s.citySrno || 1);
+      setCity(s.city);
+      setDistrict(s.district);
+      setState(s.state);
+      setPincode(s.pincode);
+
+      if (result.guardians && result.guardians.length > 0) {
+        setGuardians(result.guardians);
+      }
+
+      setMessage({
+        type: 'success',
+        text: `Fetched live API data for STD_SRNO = ${apiSrnoInput.trim()} (${s.name}) successfully!`
+      });
+    } else {
+      setMessage({
+        type: 'error',
+        text: result.message || `No data returned from API for STD_SRNO = ${apiSrnoInput.trim()}`
+      });
+    }
+  };
 
   const getInputStyle = (fieldName, extraClasses = '') =>
     `w-full px-3.5 py-2 bg-slate-50 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${extraClasses} ${
@@ -129,6 +211,9 @@ export default function AddStudent() {
       city,
       district,
       state,
+      citySrno,
+      districtSrno,
+      stateSrno,
       pincode,
       password: studentPassword
     };
@@ -140,6 +225,9 @@ export default function AddStudent() {
     e.preventDefault();
 
     const missing = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let hasInvalidEmail = false;
+
     if (!firstName.trim()) missing.firstName = true;
     if (!lastName.trim()) missing.lastName = true;
     if (!studentId.trim()) missing.studentId = true;
@@ -147,19 +235,29 @@ export default function AddStudent() {
     if (!rollNumber.trim()) missing.rollNumber = true;
     if (!dob.trim()) missing.dob = true;
     if (!studentPhone.trim()) missing.studentPhone = true;
-    if (!studentEmail.trim()) missing.studentEmail = true;
+
+    if (!studentEmail.trim() || !emailRegex.test(studentEmail.trim())) {
+      missing.studentEmail = true;
+      hasInvalidEmail = true;
+    }
 
     guardians.forEach((g, idx) => {
       if (!g.firstName.trim()) missing[`g_${idx}_firstName`] = true;
       if (!g.lastName.trim()) missing[`g_${idx}_lastName`] = true;
       if (!g.phone.trim()) missing[`g_${idx}_phone`] = true;
+      if (!g.email.trim() || !emailRegex.test(g.email.trim())) {
+        missing[`g_${idx}_email`] = true;
+        hasInvalidEmail = true;
+      }
     });
 
     if (Object.keys(missing).length > 0) {
       setEmptyFields(missing);
       setMessage({
         type: 'error',
-        text: 'Please fill in all required fields marked with *'
+        text: hasInvalidEmail
+          ? 'Please enter valid email addresses (e.g. name@domain.com) marked with *'
+          : 'Please fill in all required fields marked with *'
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -207,6 +305,14 @@ export default function AddStudent() {
 
     addStudentWithMultipleGuardians(studentDataObj, guardiansList);
 
+    // POST payload to live API endpoint
+    const payload = buildCurrentPayload();
+    saveStudentDetailsToApi(payload).then((res) => {
+      if (res.success) {
+        console.log('Successfully posted student payload to live API endpoint:', res);
+      }
+    });
+
     setMessage({
       type: 'success',
       text: `Successfully registered Student (${studentDataObj.fullName}) and ${guardiansList.length} Guardian(s)!`
@@ -242,6 +348,7 @@ export default function AddStudent() {
           </div>
         </div>
       </div>
+
 
       {message && (
         <div
@@ -350,9 +457,19 @@ export default function AddStudent() {
                 onChange={(e) => setGender(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
               >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
+                {masterGenders.length > 0 ? (
+                  masterGenders.map((g) => (
+                    <option key={g.GENDER_SRNO} value={g.GENDER_NAME}>
+                      {g.GENDER_NAME}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -387,14 +504,24 @@ export default function AddStudent() {
                 onChange={(e) => setBloodGroup(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
               >
-                <option value="A+">A+</option>
-                <option value="A-">A-</option>
-                <option value="B+">B+</option>
-                <option value="B-">B-</option>
-                <option value="O+">O+</option>
-                <option value="O-">O-</option>
-                <option value="AB+">AB+</option>
-                <option value="AB-">AB-</option>
+                {masterBloodGroups.length > 0 ? (
+                  masterBloodGroups.map((bg) => (
+                    <option key={bg.BLOODGRP_SRNO} value={bg.BLOODGRP_NAME}>
+                      {bg.BLOODGRP_NAME}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -456,36 +583,111 @@ export default function AddStudent() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">City</label>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Aurangabad"
-                className={getInputStyle('city')}
-              />
+              <label className="block text-xs font-semibold text-slate-700 mb-1">State</label>
+              {masterStates.length > 0 ? (
+                <select
+                  value={stateSrno}
+                  onChange={(e) => {
+                    const srno = Number(e.target.value);
+                    setStateSrno(srno);
+                    const foundState = masterStates.find((s) => s.STATE_SRNO === srno);
+                    if (foundState) setState(foundState.STATE_NAME);
+                    const matchingDistricts = masterDistricts.filter((d) => d.STATE_SRNO === srno);
+                    if (matchingDistricts.length > 0) {
+                      setDistrictSrno(matchingDistricts[0].DISTRICT_SRNO);
+                      setDistrict(matchingDistricts[0].DISTRICT_NAME);
+                      const matchingCities = masterCities.filter((c) => c.DISTRICT_SRNO === matchingDistricts[0].DISTRICT_SRNO);
+                      if (matchingCities.length > 0) {
+                        setCitySrno(matchingCities[0].CITY_SRNO);
+                        setCity(matchingCities[0].CITY_NAME);
+                      }
+                    }
+                  }}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                >
+                  {masterStates.map((s) => (
+                    <option key={s.STATE_SRNO} value={s.STATE_SRNO}>
+                      {s.STATE_NAME}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  className={getInputStyle('state')}
+                />
+              )}
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">District</label>
-              <input
-                type="text"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                placeholder="Aurangabad"
-                className={getInputStyle('district')}
-              />
+              {masterDistricts.length > 0 ? (
+                <select
+                  value={districtSrno}
+                  onChange={(e) => {
+                    const srno = Number(e.target.value);
+                    setDistrictSrno(srno);
+                    const foundDistrict = masterDistricts.find((d) => d.DISTRICT_SRNO === srno);
+                    if (foundDistrict) setDistrict(foundDistrict.DISTRICT_NAME);
+                    const matchingCities = masterCities.filter((c) => c.DISTRICT_SRNO === srno);
+                    if (matchingCities.length > 0) {
+                      setCitySrno(matchingCities[0].CITY_SRNO);
+                      setCity(matchingCities[0].CITY_NAME);
+                    }
+                  }}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                >
+                  {(masterDistricts.filter((d) => d.STATE_SRNO === stateSrno).length > 0
+                    ? masterDistricts.filter((d) => d.STATE_SRNO === stateSrno)
+                    : masterDistricts
+                  ).map((d) => (
+                    <option key={`${d.DISTRICT_SRNO}-${d.DISTRICT_NAME}`} value={d.DISTRICT_SRNO}>
+                      {d.DISTRICT_NAME}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className={getInputStyle('district')}
+                />
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">State</label>
-              <input
-                type="text"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                placeholder="Maharashtra"
-                className={getInputStyle('state')}
-              />
+              <label className="block text-xs font-semibold text-slate-700 mb-1">City</label>
+              {masterCities.length > 0 ? (
+                <select
+                  value={citySrno}
+                  onChange={(e) => {
+                    const srno = Number(e.target.value);
+                    setCitySrno(srno);
+                    const foundCity = masterCities.find((c) => c.CITY_SRNO === srno);
+                    if (foundCity) setCity(foundCity.CITY_NAME);
+                  }}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                >
+                  {(masterCities.filter((c) => c.DISTRICT_SRNO === districtSrno).length > 0
+                    ? masterCities.filter((c) => c.DISTRICT_SRNO === districtSrno)
+                    : masterCities
+                  ).map((c) => (
+                    <option key={`${c.CITY_SRNO}-${c.CITY_NAME}`} value={c.CITY_SRNO}>
+                      {c.CITY_NAME}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className={getInputStyle('city')}
+                />
+              )}
             </div>
 
             <div>
@@ -649,13 +851,16 @@ export default function AddStudent() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Email</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
                     <input
                       type="email"
+                      required
                       value={guardian.email}
                       onChange={(e) => handleGuardianChange(index, 'email', e.target.value)}
                       placeholder="parent@example.com"
-                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className={`w-full px-3.5 py-2 bg-white border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        emptyFields[`g_${index}_email`] ? 'border-red-500 bg-red-50/30' : 'border-slate-200'
+                      }`}
                     />
                   </div>
                 </div>

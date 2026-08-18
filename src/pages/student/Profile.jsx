@@ -7,11 +7,12 @@ export default function Profile() {
   const [student, setStudent] = useState(null);
 
   useEffect(() => {
-    if (!authUser) return;
+    const user = getCurrentUser();
+    if (!user) return;
     const students = getStudents();
-    const found = students.find((s) => s.id === authUser.id);
-    setStudent(found || authUser);
-  }, [authUser]);
+    const found = students.find((s) => s.id === user.id || (s.stdSrno && s.stdSrno === user.stdSrno));
+    setStudent(found || user);
+  }, []);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

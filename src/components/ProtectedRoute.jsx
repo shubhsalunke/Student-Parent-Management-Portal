@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { getCurrentUser } from '../data/demoData';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
 export default function ProtectedRoute({ allowedRoles, pageTitle }) {
+  const location = useLocation();
   const user = getCurrentUser();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 

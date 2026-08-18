@@ -28,7 +28,7 @@ export default function ParentDashboard() {
       const resData = getResultRecords(childData.id);
       setResultStats(calculateResultStats(resData));
     }
-  }, [authUser]);
+  }, [authUser?.id]);
 
   return (
     <div className="space-y-6">

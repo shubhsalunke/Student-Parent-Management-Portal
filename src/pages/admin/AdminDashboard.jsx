@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, UserCheck, UserPlus, HeartHandshake, ArrowRight, ShieldCheck } from 'lucide-react';
-import { getStudents, getParents, getRelationships } from '../../data/demoData';
+import { getStudents, getParents, getRelationships, syncAllDataFromApi } from '../../data/demoData';
 
 export default function AdminDashboard() {
   const [students, setStudents] = useState([]);
@@ -9,9 +9,13 @@ export default function AdminDashboard() {
   const [relationships, setRelationships] = useState([]);
 
   useEffect(() => {
-    setStudents(getStudents());
-    setParents(getParents());
-    setRelationships(getRelationships());
+    const loadAllData = async () => {
+      await syncAllDataFromApi();
+      setStudents(getStudents());
+      setParents(getParents());
+      setRelationships(getRelationships());
+    };
+    loadAllData();
   }, []);
 
   return (
@@ -82,7 +86,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-slate-800 text-lg">Student Directory</h3>
             <Link to="/admin/students" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-              <span>View All</span>
+              <span>View All ({students.length})</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -90,7 +94,7 @@ export default function AdminDashboard() {
             View, edit, or remove student profiles and check connected guardian relationships.
           </p>
           <div className="divide-y divide-slate-100">
-            {students.slice(0, 3).map((stu) => (
+            {students.slice(0, 6).map((stu) => (
               <div key={stu.id} className="py-2.5 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-800">{stu.name}</p>
@@ -108,7 +112,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-slate-800 text-lg">Parent Directory</h3>
             <Link to="/admin/parents" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-              <span>View All</span>
+              <span>View All ({parents.length})</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -116,7 +120,7 @@ export default function AdminDashboard() {
             Monitor registered parents and their linked children accounts across classes.
           </p>
           <div className="divide-y divide-slate-100">
-            {parents.slice(0, 3).map((par) => (
+            {parents.slice(0, 6).map((par) => (
               <div key={par.id} className="py-2.5 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-800">{par.name}</p>

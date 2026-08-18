@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, ArrowRight, Eye, EyeOff, RotateCcw, CheckCircle2, Info } from 'lucide-react';
-import { loginUser, getCurrentUser, resetDemoData } from '../data/demoData';
+import { loginUser, getCurrentUser, resetDemoData, syncAllDataFromApi } from '../data/demoData';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,8 +11,9 @@ export default function Login() {
   const [error, setError] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in and pre-sync API data
   useEffect(() => {
+    syncAllDataFromApi();
     const existing = getCurrentUser();
     if (existing) {
       if (existing.role === 'admin') navigate('/admin/dashboard');
@@ -21,12 +22,12 @@ export default function Login() {
     }
   }, [navigate]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setResetSuccess(false);
 
-    const result = loginUser(identifier, password);
+    const result = await loginUser(identifier, password);
     if (result.success && result.user) {
       if (result.user.role === 'admin') navigate('/admin/dashboard');
       else if (result.user.role === 'student') navigate('/student/dashboard');

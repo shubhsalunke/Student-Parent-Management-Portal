@@ -12,7 +12,7 @@ export default function Attendance() {
     const data = getAttendanceRecords(authUser.id);
     setRecords(data);
     setPercentage(calculateAttendancePercentage(data));
-  }, [authUser]);
+  }, [authUser?.id]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

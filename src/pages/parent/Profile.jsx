@@ -13,7 +13,7 @@ export default function ParentProfile() {
     const found = parents.find((p) => p.id === authUser.id);
     setParent(found || authUser);
     setChild(getStudentForParent(authUser.id));
-  }, [authUser]);
+  }, [authUser?.id]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
