@@ -195,22 +195,26 @@ export const calculateResultStats = (records) => {
 };
 
 // Relationship Helper functions
-export const getParentForStudent = (studentId) => {
+export const getParentsForStudent = (studentId) => {
   const relationships = getRelationships();
-  const rel = relationships.find((r) => r.studentId === studentId);
-  if (!rel) return null;
+  const rels = relationships.filter((r) => r.studentId === studentId);
+  if (!rels || rels.length === 0) return [];
 
   const parents = getParents();
-  const parent = parents.find((p) => p.id === rel.parentId);
-  if (!parent) return null;
+  return rels.map((rel) => {
+    const parent = parents.find((p) => p.id === rel.parentId);
+    const displayRelationship = rel.relationship === "Other" ? rel.customRelationship || "Guardian" : rel.relationship;
+    return {
+      ...(parent || { id: rel.parentId, name: "Parent", email: "", phone: "" }),
+      relationship: displayRelationship,
+      rawRelationship: rel.relationship
+    };
+  });
+};
 
-  const displayRelationship = rel.relationship === "Other" ? rel.customRelationship || "Guardian" : rel.relationship;
-
-  return {
-    ...parent,
-    relationship: displayRelationship,
-    rawRelationship: rel.relationship
-  };
+export const getParentForStudent = (studentId) => {
+  const parentsList = getParentsForStudent(studentId);
+  return parentsList.length > 0 ? parentsList[0] : null;
 };
 
 export const getStudentForParent = (parentId) => {
@@ -258,51 +262,117 @@ export const generateNextParentId = () => {
   return `PAR${String(nextNum).padStart(3, '0')}`;
 };
 
-// Admin Operations
-export const addStudentAndParent = (studentData, parentData, relationshipData) => {
+// Format exact API Payload JSON requested by user
+export const formatPayloadJSON = (studentData, guardiansList) => {
+  // Parse numeric STU SRNO or default
+  const stuSrnoMatch = studentData.id?.match(/\d+/);
+  const stdSrno = stuSrnoMatch ? parseInt(stuSrnoMatch[0], 10) : 1;
+
+  const genderMap = { Male: 1, Female: 2, Other: 3 };
+  const bloodGroupMap = { "A+": 1, "A-": 2, "B+": 3, "B-": 4, "O+": 5, "O-": 6, "AB+": 7, "AB-": 8 };
+
+  const t0Entry = {
+    STD_SRNO: stdSrno,
+    F_NAME: studentData.firstName || studentData.name?.split(' ')[0] || "",
+    M_NAME: studentData.middleName || "",
+    L_NAME: studentData.lastName || studentData.name?.split(' ').slice(1).join(' ') || "",
+    DOB: studentData.dob ? `${studentData.dob}T00:00:00` : "",
+    BIRTH_PLACE: studentData.birthPlace || "",
+    BLOOD_GROUP: bloodGroupMap[studentData.bloodGroup] || studentData.bloodGroup || 1,
+    MOBILE_NO: studentData.phone || "",
+    ADDRESS: studentData.address || "",
+    CITY_SRNO: studentData.citySrno || 1,
+    DISTRICT_SRNO: studentData.districtSrno || 1,
+    STATE_SRNO: studentData.stateSrno || 1,
+    PINCODE: Number(studentData.pincode) || 431001,
+    GENDER_SRNO: genderMap[studentData.gender] || 1,
+    CLASS_SRNO: Number(studentData.classSrno) || 1,
+    ROLL_NO: Number(studentData.rollNumber) || 1,
+    ADDMISSION_DATE: studentData.admissionDate ? `${studentData.admissionDate}T00:00:00` : ""
+  };
+
+  const t1Entries = (guardiansList || []).map((g, idx) => {
+    const parentSrnoMatch = g.id?.match(/\d+/);
+    const grdnSrno = parentSrnoMatch ? parseInt(parentSrnoMatch[0], 10) : (idx + 1);
+
+    return {
+      GRDN_SRNO: grdnSrno,
+      STD_SRNO: stdSrno,
+      F_NAME: g.firstName || g.name?.split(' ')[0] || "",
+      M_NAME: g.middleName || "",
+      L_NAME: g.lastName || g.name?.split(' ').slice(1).join(' ') || "",
+      RELATION: g.relationship === 'Other' ? (g.customRelationship || 'Guardian') : g.relationship,
+      GENDER_SRNO: genderMap[g.gender] || 1,
+      MOBILE_NO: g.phone || "",
+      ADDRESS: g.address || studentData.address || ""
+    };
+  });
+
+  return {
+    msgId: 1,
+    msg: {
+      T0: [t0Entry],
+      T1: t1Entries
+    }
+  };
+};
+
+// Multi-guardian save
+export const addStudentWithMultipleGuardians = (studentData, guardiansList) => {
   const students = getStudents();
   const parents = getParents();
-  const relationships = getRelationships();
+  let relationships = getRelationships();
 
-  // Save student (update if exists, or push)
+  // Combined full name for backward compatibility
+  const fullName = studentData.fullName || `${studentData.firstName} ${studentData.lastName}`.trim();
+  const fullStudentObj = {
+    ...studentData,
+    name: fullName,
+    role: "student"
+  };
+
+  // Save/Update student
   const existingStudentIndex = students.findIndex((s) => s.id === studentData.id);
   if (existingStudentIndex >= 0) {
-    students[existingStudentIndex] = { ...studentData, role: "student" };
+    students[existingStudentIndex] = { ...students[existingStudentIndex], ...fullStudentObj };
   } else {
-    students.push({
-      ...studentData,
-      role: "student"
-    });
+    students.push(fullStudentObj);
   }
 
-  // Check if parent already exists or create new
-  const existingParentIndex = parents.findIndex((p) => p.id === parentData.id);
-  if (existingParentIndex >= 0) {
-    parents[existingParentIndex] = { ...parentData, role: "parent" };
-  } else {
-    parents.push({
-      ...parentData,
+  // Remove existing relationships for this student
+  relationships = relationships.filter((r) => r.studentId !== studentData.id);
+
+  // Save Guardians & create relationships
+  guardiansList.forEach((g) => {
+    const parentFullName = g.fullName || `${g.firstName} ${g.lastName}`.trim();
+    const parentObj = {
+      id: g.id,
+      name: parentFullName,
+      firstName: g.firstName,
+      middleName: g.middleName,
+      lastName: g.lastName,
+      email: g.email,
+      phone: g.phone,
+      address: g.address,
+      gender: g.gender,
+      password: g.password || 'parent123',
       role: "parent"
-    });
-  }
-
-  // Save relationship (update if exists, or push)
-  const existingRelIndex = relationships.findIndex((r) => r.studentId === studentData.id);
-  if (existingRelIndex >= 0) {
-    relationships[existingRelIndex] = {
-      studentId: studentData.id,
-      parentId: parentData.id,
-      relationship: relationshipData.relationship,
-      customRelationship: relationshipData.customRelationship || ""
     };
-  } else {
+
+    const existingParentIndex = parents.findIndex((p) => p.id === g.id);
+    if (existingParentIndex >= 0) {
+      parents[existingParentIndex] = { ...parents[existingParentIndex], ...parentObj };
+    } else {
+      parents.push(parentObj);
+    }
+
     relationships.push({
       studentId: studentData.id,
-      parentId: parentData.id,
-      relationship: relationshipData.relationship,
-      customRelationship: relationshipData.customRelationship || ""
+      parentId: g.id,
+      relationship: g.relationship,
+      customRelationship: g.customRelationship || ""
     });
-  }
+  });
 
   // Seed default attendance and result for new student
   const attendance = JSON.parse(localStorage.getItem("portal_attendance") || "{}");
@@ -330,6 +400,16 @@ export const addStudentAndParent = (studentData, parentData, relationshipData) =
   localStorage.setItem("portal_relationships", JSON.stringify(relationships));
   localStorage.setItem("portal_attendance", JSON.stringify(attendance));
   localStorage.setItem("portal_results", JSON.stringify(results));
+};
+
+// Admin Operations
+export const addStudentAndParent = (studentData, parentData, relationshipData) => {
+  const guardianObj = {
+    ...parentData,
+    relationship: relationshipData.relationship,
+    customRelationship: relationshipData.customRelationship
+  };
+  addStudentWithMultipleGuardians(studentData, [guardianObj]);
 };
 
 export const updateStudent = (updatedStudent) => {
