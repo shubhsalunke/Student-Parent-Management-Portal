@@ -25,7 +25,8 @@ import {
   addStudentWithMultipleGuardians,
   generateNextStudentId,
   generateNextParentId,
-  formatPayloadJSON
+  formatPayloadJSON,
+  getParents
 } from '../../data/demoData';
 import { fetchStudentDetailsFromApi, fetchMasterDataFromApi, saveStudentDetailsToApi } from '../../data/apiService';
 
@@ -155,9 +156,23 @@ export default function AddStudent() {
 
   // Add guardian item to list
   const handleAddGuardian = () => {
-    const nextParentId = `PAR${String(
-      parseInt(guardians[guardians.length - 1]?.id?.match(/\d+/)?.[0] || '0', 10) + 1
-    ).padStart(3, '0')}`;
+    let maxNum = 0;
+    const existingParents = getParents();
+    existingParents.forEach((p) => {
+      const match = p.id?.match(/(?:PAR|P)(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+    guardians.forEach((g) => {
+      const match = g.id?.match(/(?:PAR|P)(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+    const nextParentId = `PAR${String(maxNum + 1).padStart(3, '0')}`;
 
     setGuardians((prev) => [
       ...prev,

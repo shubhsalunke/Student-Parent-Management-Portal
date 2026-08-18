@@ -123,6 +123,17 @@ export const initStorage = () => {
   if (!localStorage.getItem("portal_results")) {
     localStorage.setItem("portal_results", JSON.stringify({}));
   }
+
+  // Auto-cleanup any corrupted parent entries in localStorage
+  try {
+    const rawParents = JSON.parse(localStorage.getItem("portal_parents") || "[]");
+    const sanitizedParents = rawParents.filter((p) => p && p.role !== 'student');
+    if (sanitizedParents.length !== rawParents.length) {
+      localStorage.setItem("portal_parents", JSON.stringify(sanitizedParents));
+    }
+  } catch (e) {
+    console.error("Error sanitizing portal_parents", e);
+  }
 };
 
 // Getter functions
@@ -141,11 +152,14 @@ export const getStudents = () => {
 export const getParents = () => {
   initStorage();
   const list = JSON.parse(localStorage.getItem("portal_parents") || "[]");
-  return list.map((p) => ({
-    ...p,
-    email: p.email ? p.email.replace(/\s+/g, '') : '',
-    password: p.password || "parent123"
-  }));
+  return list
+    .filter((p) => p && p.role !== 'student')
+    .map((p) => ({
+      ...p,
+      email: p.email ? p.email.replace(/\s+/g, '') : '',
+      password: p.password || "parent123",
+      role: "parent"
+    }));
 };
 
 export const getRelationships = () => {
@@ -188,15 +202,26 @@ export const calculateResultStats = (records) => {
 
 // Relationship Helper functions
 export const getParentsForStudent = (studentId) => {
+  if (!studentId) return [];
   const relationships = getRelationships();
-  const rels = relationships.filter((r) => r.studentId === studentId);
+  const cleanId = String(studentId).trim().toLowerCase();
+
+  const rels = relationships.filter(
+    (r) =>
+      (r.studentId && String(r.studentId).trim().toLowerCase() === cleanId) ||
+      (r.stdSrno && String(r.stdSrno) === cleanId)
+  );
   if (!rels || rels.length === 0) return [];
 
   const parents = getParents();
   const uniqueParentsMap = new Map();
 
   rels.forEach((rel) => {
-    const parent = parents.find((p) => p.id === rel.parentId || (p.grdnSrno && rel.grdnSrno && p.grdnSrno === rel.grdnSrno));
+    const parent = parents.find(
+      (p) =>
+        (p.id && String(p.id).trim().toLowerCase() === String(rel.parentId).trim().toLowerCase()) ||
+        (p.grdnSrno && rel.grdnSrno && String(p.grdnSrno) === String(rel.grdnSrno))
+    );
     const displayRelationship = rel.relationship === "Other" ? rel.customRelationship || "Guardian" : rel.relationship;
     const parentData = {
       ...(parent || { id: rel.parentId, name: "Parent", email: "", phone: "" }),
@@ -204,8 +229,7 @@ export const getParentsForStudent = (studentId) => {
       rawRelationship: rel.relationship
     };
 
-    // Deduplicate by parent name + relationship
-    const key = `${parentData.name?.trim().toLowerCase()}_${displayRelationship.toLowerCase()}`;
+    const key = parentData.id || `${parentData.name?.trim().toLowerCase()}_${displayRelationship.toLowerCase()}`;
     if (!uniqueParentsMap.has(key) && parentData.name) {
       uniqueParentsMap.set(key, parentData);
     }
@@ -220,12 +244,23 @@ export const getParentForStudent = (studentId) => {
 };
 
 export const getStudentForParent = (parentId) => {
+  if (!parentId) return null;
   const relationships = getRelationships();
-  const rel = relationships.find((r) => r.parentId === parentId);
+  const cleanId = String(parentId).trim().toLowerCase();
+
+  const rel = relationships.find(
+    (r) =>
+      (r.parentId && String(r.parentId).trim().toLowerCase() === cleanId) ||
+      (r.grdnSrno && String(r.grdnSrno) === cleanId)
+  );
   if (!rel) return null;
 
   const students = getStudents();
-  const student = students.find((s) => s.id === rel.studentId);
+  const student = students.find(
+    (s) =>
+      (s.id && String(s.id).trim().toLowerCase() === String(rel.studentId).trim().toLowerCase()) ||
+      (s.stdSrno && String(s.stdSrno) === String(rel.studentId))
+  );
   if (!student) return null;
 
   const displayRelationship = rel.relationship === "Other" ? rel.customRelationship || "Guardian" : rel.relationship;
@@ -552,33 +587,54 @@ export const resetDemoData = () => {
 
 export const loginUser = async (idOrEmail, password) => {
   initStorage();
-  const input = idOrEmail.trim().toLowerCase();
+  const inputClean = idOrEmail.trim().toLowerCase().replace(/\s+/g, '');
   const trimmedPass = password.trim();
 
-  // Find matching account first
-  const isAdmin = input === ADMIN_ACCOUNT.id.toLowerCase() || input === ADMIN_ACCOUNT.email.toLowerCase();
+  const isAdmin = inputClean === ADMIN_ACCOUNT.id.toLowerCase() || inputClean === ADMIN_ACCOUNT.email.toLowerCase();
+
+  const matchStudent = (s) => {
+    if (!s) return false;
+    const sId = s.id?.trim().toLowerCase();
+    const sEmail = s.email?.trim().toLowerCase().replace(/\s+/g, '');
+    const sStdSrno = s.stdSrno ? String(s.stdSrno) : '';
+    const normInput = inputClean.replace(/^stu0*/, '');
+    const normId = sId ? sId.replace(/^stu0*/, '') : '';
+    return (
+      sId === inputClean ||
+      sEmail === inputClean ||
+      (sStdSrno && sStdSrno === inputClean) ||
+      (normId && normInput && normId === normInput)
+    );
+  };
+
+  const matchParent = (p) => {
+    if (!p) return false;
+    const pId = p.id?.trim().toLowerCase();
+    const pEmail = p.email?.trim().toLowerCase().replace(/\s+/g, '');
+    const pGrdnSrno = p.grdnSrno ? String(p.grdnSrno) : '';
+    const normInput = inputClean.replace(/^par0*/, '');
+    const normId = pId ? pId.replace(/^par0*/, '') : '';
+    return (
+      pId === inputClean ||
+      pEmail === inputClean ||
+      (pGrdnSrno && pGrdnSrno === inputClean) ||
+      (normId && normInput && normId === normInput)
+    );
+  };
   
   let students = getStudents();
-  let foundStudent = students.find(
-    (s) => s.id?.trim().toLowerCase() === input || (s.email && s.email.trim().toLowerCase() === input)
-  );
+  let foundStudent = students.find(matchStudent);
 
   let parents = getParents();
-  let foundParent = parents.find(
-    (p) => p.id?.trim().toLowerCase() === input || (p.email && p.email.trim().toLowerCase() === input)
-  );
+  let foundParent = parents.find(matchParent);
 
   // If student or parent is not found locally, auto-sync live API data
   if (!isAdmin && !foundStudent && !foundParent) {
     await syncAllDataFromApi();
     students = getStudents();
-    foundStudent = students.find(
-      (s) => s.id?.trim().toLowerCase() === input || (s.email && s.email.trim().toLowerCase() === input)
-    );
+    foundStudent = students.find(matchStudent);
     parents = getParents();
-    foundParent = parents.find(
-      (p) => p.id?.trim().toLowerCase() === input || (p.email && p.email.trim().toLowerCase() === input)
-    );
+    foundParent = parents.find(matchParent);
   }
 
   // If no matching account ID or Email exists in the system after API sync
